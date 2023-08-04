@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 
@@ -12,6 +13,8 @@ public class Server : IServer
   private CancellationTokenSource _listenConnectionsCTS = null!;
 
   private Task _listenTCPConnectionsTask = null!;
+
+  private ConcurrentDictionary<Guid, Client> _clients = new();
 
   public Task Start(int port)
   {
@@ -41,6 +44,16 @@ public class Server : IServer
     Console.WriteLine("TCP server was stopped");
   }
 
+  public Task SendPacketToClient(Guid clientGuid, Packet packet)
+  {
+    if (!_clients.TryGetValue(clientGuid, out Client? client))
+    {
+      return Task.CompletedTask;
+    }
+
+    return client.SendAsync(packet, CancellationToken.None);
+  }
+
   private Task ListenTCPConnections(CancellationToken token)
     => Task.Run(async () =>
     {
@@ -52,9 +65,14 @@ public class Server : IServer
         try
         {
           TcpClient tcpClient = await _socket.AcceptTcpClientAsync(token);
+
           Client client = new(tcpClient);
-          Task handle = HandleClientConnection(client, token);
-          processConnectionTasks.Add(handle);
+
+          if (_clients.TryAdd(client.Guid, client))
+          {
+            Task handle = HandleClientConnection(client, token);
+            processConnectionTasks.Add(handle);
+          }
         }
         catch (OperationCanceledException)
         {
@@ -68,9 +86,29 @@ public class Server : IServer
       }
     }, token);
 
-  private Task HandleClientConnection(Client client, CancellationToken token)
-    => Task.Run(() =>
+  private static Task HandleClientConnection(Client client, CancellationToken token)
+    => Task.Run(async () =>
     {
-      
+      bool cancelled = false;
+
+      try
+      {
+        while (!cancelled)
+        {
+
+        }
+      }
+      catch (OperationCanceledException)
+      {
+        cancelled = true;
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine(ex);
+      }
+      finally
+      {
+        await client.CloseAsync();
+      }
     }, token);
 }

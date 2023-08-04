@@ -52,7 +52,9 @@ public class Server : IServer
         try
         {
           TcpClient tcpClient = await _socket.AcceptTcpClientAsync(token);
-
+          Client client = new(tcpClient);
+          Task handle = HandleClientConnection(client, token);
+          processConnectionTasks.Add(handle);
         }
         catch (OperationCanceledException)
         {
@@ -66,9 +68,9 @@ public class Server : IServer
       }
     }, token);
 
-  private Task HandleTCPConnection(CancellationToken token)
-   => Task.Run(() =>
-   {
-
-   }, token);
+  private Task HandleClientConnection(Client client, CancellationToken token)
+    => Task.Run(() =>
+    {
+      
+    }, token);
 }

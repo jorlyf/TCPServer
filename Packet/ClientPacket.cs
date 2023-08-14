@@ -1,15 +1,12 @@
-using System.Runtime.InteropServices;
-
 namespace TCPServer;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public struct Packet
+public class ClientPacket
 {
   public static int MaxBufferSize => 1024;
   public int Length { get; private set; }
   public byte[] Buffer { get; private set; } = new byte[MaxBufferSize];
 
-  public Packet(byte[] buff, bool write = true)
+  public ClientPacket(byte[] buff, bool write = true)
   {
     int size = buff.Length + (write ? sizeof(int) : 0);
     if (size > MaxBufferSize)

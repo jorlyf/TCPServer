@@ -7,6 +7,6 @@ public interface IClient
   Guid Guid { get; }
   TcpClient TcpClient { get; }
   Task CloseAsync();
-  Task SendAsync(Packet packet, CancellationToken token);
-  Task<Packet> ReadAsync(CancellationToken token);
+  Task SendAsync(ClientPacket packet, CancellationToken token);
+  Task<ClientPacket> ReadAsync(CancellationToken token);
 }

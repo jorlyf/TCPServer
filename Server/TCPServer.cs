@@ -16,6 +16,9 @@ public class Server : IServer
 
   private readonly ConcurrentDictionary<Guid, Client> _clients = new();
 
+  public ConcurrentQueue<ClientPacket> PacketsIn { get; } = new();
+  public ConcurrentQueue<ServerPacket> PacketsOut { get; } = new();
+
   public Task Start(int port)
   {
     if (_isRunning) throw new Exception("TCPServer is already started");
@@ -44,14 +47,23 @@ public class Server : IServer
     Console.WriteLine("TCP server was stopped");
   }
 
-  public Task SendPacketToClient(Guid clientGuid, Packet packet)
+  public Task SendPacketToClient(Guid clientGuid, ClientPacket packet)
   {
     if (!_clients.TryGetValue(clientGuid, out Client? client))
     {
       return Task.CompletedTask;
     }
 
-    return client.SendAsync(packet, CancellationToken.None);
+    try
+    {
+      return client.SendAsync(packet, CancellationToken.None);
+    }
+    catch (Exception ex)
+    {
+      Console.WriteLine("SendPacketToClient exception");
+      Console.WriteLine(ex.Message);
+      return Task.CompletedTask;
+    }
   }
 
   private Task ListenTCPConnections(CancellationToken token)
@@ -86,29 +98,30 @@ public class Server : IServer
       }
     }, token);
 
-  private static Task HandleClientConnection(Client client, CancellationToken token)
+  private Task HandleClientConnection(Client client, CancellationToken token)
     => Task.Run(async () =>
     {
       bool cancelled = false;
 
-      try
+      while (!cancelled)
       {
-        while (!cancelled)
+        try
         {
-
+          ClientPacket packet = await client.ReadAsync(CancellationToken.None);
+          PacketsIn.Enqueue(packet);
+          Console.WriteLine("Packet accepted");
+        }
+        catch (OperationCanceledException)
+        {
+          cancelled = true;
+        }
+        catch (Exception ex)
+        {
+          cancelled = true;
+          Console.WriteLine($"HandleClientConnection exception.\n{ex.Message}");
         }
       }
-      catch (OperationCanceledException)
-      {
-        cancelled = true;
-      }
-      catch (Exception ex)
-      {
-        Console.WriteLine(ex);
-      }
-      finally
-      {
-        await client.CloseAsync();
-      }
+
+      await client.CloseAsync();
     }, token);
 }

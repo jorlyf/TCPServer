@@ -14,6 +14,8 @@ public static class Program
     ConsoleInput();
 
     await server.Stop();
+    
+    Console.ReadLine();
   }
 
   private static void ConsoleInput()

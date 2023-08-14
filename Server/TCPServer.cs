@@ -6,7 +6,7 @@ namespace TCPServer;
 
 public class Server : IServer
 {
-  private bool _isRunning = false;
+  private volatile bool _isRunning = false;
   public bool IsRunning => _isRunning;
 
   private TcpListener _socket = null!;
@@ -14,7 +14,7 @@ public class Server : IServer
 
   private Task _listenTCPConnectionsTask = null!;
 
-  private ConcurrentDictionary<Guid, Client> _clients = new();
+  private readonly ConcurrentDictionary<Guid, Client> _clients = new();
 
   public Task Start(int port)
   {

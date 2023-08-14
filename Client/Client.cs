@@ -26,14 +26,30 @@ public class Client : IClient
 
   public Task SendAsync(Packet packet, CancellationToken token)
   {
-    return _stream.WriteAsync(packet.Buffer, token).AsTask();
+    try
+    {
+      return _stream.WriteAsync(packet.Buffer, token).AsTask();
+    }
+    catch (Exception ex)
+    {
+      Console.WriteLine(ex.Message);
+      throw;
+    }
   }
 
   public async Task<Packet> ReadAsync(CancellationToken token)
   {
     byte[] buffer = new byte[Packet.MaxBufferSize];
-    await _stream.ReadExactlyAsync(buffer, token).AsTask();
-    Packet packet = new(buffer, false);
-    return packet;
+    try
+    {
+      await _stream.ReadExactlyAsync(buffer, token).AsTask();
+      Packet packet = new(buffer, false);
+      return packet;
+    }
+    catch (Exception ex)
+    {
+      Console.WriteLine(ex.Message);
+      throw;
+    }
   }
 }

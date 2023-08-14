@@ -20,7 +20,10 @@ public struct Packet
     if (write)
     {
       Length = buff.Length;
-      BitConverter.TryWriteBytes(Buffer, Length);
+      if (!BitConverter.TryWriteBytes(Buffer, Length))
+      {
+        throw new Exception("The packet length writing was interrupted");
+      }
       buff.CopyTo(Buffer, sizeof(int));
     }
     else

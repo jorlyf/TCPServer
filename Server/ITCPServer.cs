@@ -6,10 +6,12 @@ public interface IServer
 {
   bool IsRunning { get; }
 
-  ConcurrentQueue<ClientPacket> PacketsIn { get; }
-  ConcurrentQueue<ServerPacket> PacketsOut { get; }
+  List<Guid> ConnectedClientGuids { get; }
 
-  Task Start(int port);
+  BlockingCollection<Packet> PacketsIn { get; }
+  BlockingCollection<ServerPacket> PacketsOut { get; }
+
+  void Start(int port);
   Task Stop();
-  Task SendPacketToClient(Guid clientGuid, ClientPacket packet);
+  Task SendPacketToClientAsync(Guid clientGuid, Packet packet);
 }

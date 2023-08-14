@@ -1,12 +1,12 @@
 namespace TCPServer;
 
-public class ClientPacket
+public class Packet
 {
   public static int MaxBufferSize => 1024;
   public int Length { get; private set; }
   public byte[] Buffer { get; private set; } = new byte[MaxBufferSize];
 
-  public ClientPacket(byte[] buff, bool write = true)
+  public Packet(byte[] buff, bool write = true)
   {
     int size = buff.Length + (write ? sizeof(int) : 0);
     if (size > MaxBufferSize)

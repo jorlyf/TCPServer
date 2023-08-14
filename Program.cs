@@ -8,8 +8,7 @@ public static class Program
   public static async Task Main()
   {
     IServer server = new Server();
-    _ = server.Start(_port);
-
+    server.Start(_port);
 
     ConsoleInput();
 

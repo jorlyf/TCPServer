@@ -1,6 +1,6 @@
 namespace TCPServer;
 
-public class ServerPacket : ClientPacket
+public class ServerPacket : Packet
 {
   public List<Guid> RecipientGuids;
 

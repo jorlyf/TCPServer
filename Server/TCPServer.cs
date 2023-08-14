@@ -10,16 +10,21 @@ public class Server : IServer
   public bool IsRunning => _isRunning;
 
   private TcpListener _socket = null!;
-  private CancellationTokenSource _listenConnectionsCTS = null!;
 
-  private Task _listenTCPConnectionsTask = null!;
+  private Task _listenNewConnectionsTask = null!;
+  private CancellationTokenSource _listenNewConnectionsCTS = null!;
 
-  private readonly ConcurrentDictionary<Guid, Client> _clients = new();
+  private Task _sendPacketsOutTask = null!;
+  private CancellationTokenSource _sendPacketsOutCTS = null!;
 
-  public ConcurrentQueue<ClientPacket> PacketsIn { get; } = new();
-  public ConcurrentQueue<ServerPacket> PacketsOut { get; } = new();
+  private ClientManager _clientManager = new();
 
-  public Task Start(int port)
+  public List<Guid> ConnectedClientGuids => _clientManager.ClientGuids;
+
+  public BlockingCollection<Packet> PacketsIn { get; } = new();
+  public BlockingCollection<ServerPacket> PacketsOut { get; } = new();
+
+  public void Start(int port)
   {
     if (_isRunning) throw new Exception("TCPServer is already started");
     _isRunning = true;
@@ -27,29 +32,34 @@ public class Server : IServer
     _socket = new TcpListener(IPAddress.Any, port);
     _socket.Start();
 
-    _listenConnectionsCTS = new();
+    _listenNewConnectionsCTS = new();
+    _listenNewConnectionsTask = ListenNewConnectionsAsync(_listenNewConnectionsCTS.Token);
 
-    _listenTCPConnectionsTask = ListenTCPConnections(_listenConnectionsCTS.Token);
-    return _listenTCPConnectionsTask;
+    _sendPacketsOutCTS = new();
+    _sendPacketsOutTask = SendPacketsOutAsync(_sendPacketsOutCTS.Token);
   }
 
   public async Task Stop()
   {
-    _isRunning = false;
-    _listenConnectionsCTS.Cancel();
-    Thread.Sleep(1000);
-    _listenConnectionsCTS.Dispose();
+    _listenNewConnectionsCTS.Cancel();
+    _sendPacketsOutCTS.Cancel();
 
-    await _listenTCPConnectionsTask;
+    await _listenNewConnectionsTask;
+    await _sendPacketsOutTask;
+
+    _listenNewConnectionsCTS.Dispose();
+    _sendPacketsOutCTS.Dispose();
 
     _socket.Stop();
+    _isRunning = false;
 
     Console.WriteLine("TCP server was stopped");
   }
 
-  public Task SendPacketToClient(Guid clientGuid, ClientPacket packet)
+  public Task SendPacketToClientAsync(Guid clientGuid, Packet packet)
   {
-    if (!_clients.TryGetValue(clientGuid, out Client? client))
+    IClient? client = _clientManager.GetClient(clientGuid);
+    if (client == null)
     {
       return Task.CompletedTask;
     }
@@ -62,11 +72,12 @@ public class Server : IServer
     {
       Console.WriteLine("SendPacketToClient exception");
       Console.WriteLine(ex.Message);
-      return Task.CompletedTask;
+
+      return client.CloseAsync();
     }
   }
 
-  private Task ListenTCPConnections(CancellationToken token)
+  private Task ListenNewConnectionsAsync(CancellationToken token)
     => Task.Run(async () =>
     {
       bool cancelled = false;
@@ -80,11 +91,10 @@ public class Server : IServer
 
           Client client = new(tcpClient);
 
-          if (_clients.TryAdd(client.Guid, client))
-          {
-            Task handle = HandleClientConnection(client, token);
-            processConnectionTasks.Add(handle);
-          }
+          _clientManager.AddClient(client);
+
+          Task handle = HandleClientConnectionAsync(client, token);
+          processConnectionTasks.Add(handle);
         }
         catch (OperationCanceledException)
         {
@@ -98,7 +108,7 @@ public class Server : IServer
       }
     }, token);
 
-  private Task HandleClientConnection(Client client, CancellationToken token)
+  private Task HandleClientConnectionAsync(Client client, CancellationToken token)
     => Task.Run(async () =>
     {
       bool cancelled = false;
@@ -107,9 +117,8 @@ public class Server : IServer
       {
         try
         {
-          ClientPacket packet = await client.ReadAsync(CancellationToken.None);
-          PacketsIn.Enqueue(packet);
-          Console.WriteLine("Packet accepted");
+          Packet packet = await client.ReadAsync(token);
+          PacketsIn.Add(packet);
         }
         catch (OperationCanceledException)
         {
@@ -118,10 +127,43 @@ public class Server : IServer
         catch (Exception ex)
         {
           cancelled = true;
-          Console.WriteLine($"HandleClientConnection exception.\n{ex.Message}");
         }
       }
 
       await client.CloseAsync();
+      _clientManager.RemoveClient(client.Guid);
+    }, token);
+
+  private Task SendPacketsOutAsync(CancellationToken token)
+    => Task.Run(() =>
+    {
+      bool cancelled = false;
+
+      while (!cancelled)
+      {
+        try
+        {
+          ServerPacket packet = PacketsOut.Take(token);
+
+          List<Task> tasks = new();
+
+          foreach (Guid recipientGuid in packet.RecipientGuids)
+          {
+            Task task = SendPacketToClientAsync(recipientGuid, packet);
+            tasks.Add(task);
+          }
+
+          // Task.WaitAll(tasks.ToArray());
+        }
+        catch (OperationCanceledException)
+        {
+          cancelled = true;
+        }
+        catch (Exception ex)
+        {
+          cancelled = true;
+          Console.WriteLine(ex);
+        }
+      }
     }, token);
 }

@@ -26,7 +26,7 @@ public static class Program
       if (string.IsNullOrEmpty(input)) continue;
       switch (input.ToLower())
       {
-        case "close":
+        case "stop":
           {
             _isExited = true;
             break;

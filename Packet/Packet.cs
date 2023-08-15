@@ -2,12 +2,12 @@ namespace TCPServer;
 
 public class Packet
 {
-  public static int MaxBufferSize => 1024;
+  public static int MaxRawBufferSize => 1024;
   public int Length { get; private set; }
-  public byte[] RawBuffer { get; private set; } = new byte[MaxBufferSize];
+  public byte[] RawBuffer { get; private set; } = new byte[MaxRawBufferSize];
 
   private byte[] _data = null!;
-  public byte[] Data
+  public virtual byte[] Data
   {
     get
     {
@@ -23,9 +23,9 @@ public class Packet
   public Packet(byte[] buff, bool write = true)
   {
     int size = buff.Length + (write ? sizeof(int) : 0);
-    if (size > MaxBufferSize)
+    if (size > MaxRawBufferSize)
     {
-      throw new Exception($"The max packet buffer size is {MaxBufferSize}");
+      throw new Exception($"The max packet buffer size is {MaxRawBufferSize}");
     }
 
     if (write)

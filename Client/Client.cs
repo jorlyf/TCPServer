@@ -39,7 +39,7 @@ public class Client : IClient
 
   public async Task<Packet> ReadAsync(CancellationToken token)
   {
-    byte[] buffer = new byte[Packet.MaxBufferSize];
+    byte[] buffer = new byte[Packet.MaxRawBufferSize];
     try
     {
       await _stream.ReadExactlyAsync(buffer, token).AsTask();

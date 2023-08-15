@@ -24,7 +24,7 @@ public class Client : IClient
     TcpClient.Dispose();
   }
 
-  public Task SendAsync(Packet packet, CancellationToken token)
+  public Task SendAsync(IPacket packet, CancellationToken token)
   {
     try
     {
@@ -37,19 +37,32 @@ public class Client : IClient
     }
   }
 
-  public async Task<Packet> ReadAsync(CancellationToken token)
+  public async Task<IPacket> ReadAsync(CancellationToken token)
   {
     byte[] buffer = new byte[Packet.MaxRawBufferSize];
+
     try
     {
-      await _stream.ReadExactlyAsync(buffer, token).AsTask();
-      Packet packet = new(buffer, false);
+      await _stream
+        .ReadExactlyAsync(buffer, token)
+        .AsTask();
+
+      IPacket packet = new Packet(buffer, false)
+      {
+        SenderClientGuid = Guid
+      };
+
       return packet;
+    }
+    catch (OperationCanceledException)
+    {
+      await CloseAsync();
+      throw new Exception("Client closed");
     }
     catch (Exception ex)
     {
       await CloseAsync();
-      throw new Exception($"Client closed.\n${ex.Message}");
+      throw new Exception($"Client closed\n${ex.Message}");
     }
   }
 }

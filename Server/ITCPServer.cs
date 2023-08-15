@@ -8,8 +8,8 @@ public interface IServer
 
   List<Guid> ConnectedClientGuids { get; }
 
-  BlockingCollection<Packet> PacketsIn { get; }
-  BlockingCollection<ServerPacket> PacketsOut { get; }
+  BlockingCollection<IPacket> PacketsIn { get; }
+  BlockingCollection<IServerPacket> PacketsOut { get; }
 
   void Start(int port);
   Task Stop();

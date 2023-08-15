@@ -21,8 +21,8 @@ public class Server : IServer
 
   public List<Guid> ConnectedClientGuids => _clientManager.ClientGuids;
 
-  public BlockingCollection<Packet> PacketsIn { get; } = new();
-  public BlockingCollection<ServerPacket> PacketsOut { get; } = new();
+  public BlockingCollection<IPacket> PacketsIn { get; } = new();
+  public BlockingCollection<IServerPacket> PacketsOut { get; } = new();
 
   public void Start(int port)
   {
@@ -56,7 +56,7 @@ public class Server : IServer
     Console.WriteLine("TCP server was stopped");
   }
 
-  public Task SendPacketToClientAsync(Guid clientGuid, Packet packet)
+  public Task SendPacketToClientAsync(Guid clientGuid, IPacket packet)
   {
     IClient? client = _clientManager.GetClient(clientGuid);
     if (client == null)
@@ -117,7 +117,7 @@ public class Server : IServer
       {
         try
         {
-          Packet packet = await client.ReadAsync(token);
+          IPacket packet = await client.ReadAsync(token);
           PacketsIn.Add(packet);
         }
         catch (OperationCanceledException)
@@ -143,11 +143,11 @@ public class Server : IServer
       {
         try
         {
-          ServerPacket packet = PacketsOut.Take(token);
+          IServerPacket packet = PacketsOut.Take(token);
 
           List<Task> tasks = new();
 
-          foreach (Guid recipientGuid in packet.RecipientGuids)
+          foreach (Guid recipientGuid in packet.RecipientClientGuids)
           {
             Task task = SendPacketToClientAsync(recipientGuid, packet);
             tasks.Add(task);

@@ -124,7 +124,7 @@ public class Server : IServer
         {
           cancelled = true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
           cancelled = true;
         }

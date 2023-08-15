@@ -13,5 +13,4 @@ public interface IServer
 
   void Start(int port);
   Task Stop();
-  Task SendPacketToClientAsync(Guid clientGuid, Packet packet);
 }

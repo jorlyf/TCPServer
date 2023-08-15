@@ -28,7 +28,7 @@ public class Client : IClient
   {
     try
     {
-      return _stream.WriteAsync(packet.Buffer, token).AsTask();
+      return _stream.WriteAsync(packet.RawBuffer, token).AsTask();
     }
     catch (Exception ex)
     {

@@ -17,7 +17,7 @@ public class Server : IServer
   private Task _sendPacketsOutTask = null!;
   private CancellationTokenSource _sendPacketsOutCTS = null!;
 
-  private ClientManager _clientManager = new();
+  private readonly ClientManager _clientManager = new();
 
   public List<Guid> ConnectedClientGuids => _clientManager.ClientGuids;
 
@@ -103,7 +103,7 @@ public class Server : IServer
         }
         catch (Exception ex)
         {
-          Console.WriteLine(ex);
+          Console.WriteLine($"ListenNewConnectionsAsync exception {ex.Message}");
         }
       }
     }, token);
@@ -162,7 +162,7 @@ public class Server : IServer
         catch (Exception ex)
         {
           cancelled = true;
-          Console.WriteLine(ex);
+          Console.WriteLine($"SendPacketsOutAsync exception {ex.Message}");
         }
       }
     }, token);

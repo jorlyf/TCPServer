@@ -6,8 +6,6 @@ public interface IServer
 {
   bool IsRunning { get; }
 
-  List<Guid> ConnectedClientGuids { get; }
-
   BlockingCollection<IPacket> PacketsIn { get; }
   BlockingCollection<IServerPacket> PacketsOut { get; }
 

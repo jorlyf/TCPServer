@@ -7,6 +7,7 @@ public class Client : IClient
   public Guid Guid { get; private set; }
 
   public TcpClient TcpClient { get; private set; }
+  public event Action? OnRemove;
 
   private readonly NetworkStream _stream;
 
@@ -22,6 +23,7 @@ public class Client : IClient
   {
     await _stream.DisposeAsync();
     TcpClient.Dispose();
+    OnRemove?.Invoke();
   }
 
   public Task SendAsync(IPacket packet, CancellationToken token)

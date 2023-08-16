@@ -17,9 +17,7 @@ public class Server : IServer
   private Task _sendPacketsOutTask = null!;
   private CancellationTokenSource _sendPacketsOutCTS = null!;
 
-  private readonly ClientManager _clientManager = new();
-
-  public List<Guid> ConnectedClientGuids => _clientManager.ClientGuids;
+  public ClientManager ClientManager { get; } = new();
 
   public BlockingCollection<IPacket> PacketsIn { get; } = new();
   public BlockingCollection<IServerPacket> PacketsOut { get; } = new();
@@ -58,7 +56,7 @@ public class Server : IServer
 
   public Task SendPacketToClientAsync(Guid clientGuid, IPacket packet)
   {
-    IClient? client = _clientManager.GetClient(clientGuid);
+    IClient? client = ClientManager.GetClient(clientGuid);
     if (client == null)
     {
       return Task.CompletedTask;
@@ -91,7 +89,7 @@ public class Server : IServer
 
           Client client = new(tcpClient);
 
-          _clientManager.AddClient(client);
+          ClientManager.AddClient(client);
 
           Task handle = HandleClientConnectionAsync(client, token);
           processConnectionTasks.Add(handle);
@@ -131,7 +129,7 @@ public class Server : IServer
       }
 
       await client.CloseAsync();
-      _clientManager.RemoveClient(client.Guid);
+      ClientManager.RemoveClient(client.Guid);
     }, token);
 
   private Task SendPacketsOutAsync(CancellationToken token)

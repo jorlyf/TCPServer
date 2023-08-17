@@ -5,7 +5,6 @@ namespace TCPServer;
 internal class ClientManager : IClientManager
 {
   private readonly ConcurrentDictionary<Guid, IClient> _clients = new();
-  private readonly bool IsDebug = true;
 
   public List<Guid> ClientGuids => _clients.Keys.ToList();
 
@@ -29,11 +28,6 @@ internal class ClientManager : IClientManager
       {
         Task.Run(() => OnAddClient?.Invoke(client));
       }
-
-      if (IsDebug)
-      {
-        Console.WriteLine($"Client {{ {nameof(Guid)} = {client.Guid} }} added");
-      }
     }
   }
 
@@ -44,11 +38,6 @@ internal class ClientManager : IClientManager
       if (OnRemoveClient != null)
       {
         Task.Run(() => OnRemoveClient?.Invoke(client));
-      }
-
-      if (IsDebug)
-      {
-        Console.WriteLine($"Client {{ {nameof(Guid)} = {client.Guid} }} removed");
       }
     }
   }

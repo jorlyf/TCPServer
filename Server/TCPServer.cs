@@ -17,7 +17,7 @@ public class Server : IServer
   private Task _sendPacketsOutTask = null!;
   private CancellationTokenSource _sendPacketsOutCTS = null!;
 
-  public ClientManager ClientManager { get; } = new();
+  public IClientManager ClientManager { get; } = new ClientManager();
 
   public BlockingCollection<IPacket> PacketsIn { get; } = new();
   public BlockingCollection<IServerPacket> PacketsOut { get; } = new();
@@ -37,7 +37,7 @@ public class Server : IServer
     _sendPacketsOutTask = SendPacketsOutAsync(_sendPacketsOutCTS.Token);
   }
 
-  public async Task Stop()
+  public async Task StopAsync()
   {
     _listenNewConnectionsCTS.Cancel();
     _sendPacketsOutCTS.Cancel();
@@ -50,6 +50,8 @@ public class Server : IServer
 
     _socket.Stop();
     _isRunning = false;
+
+    ClientManager.RemoveAllClients();
 
     Console.WriteLine("TCP server was stopped");
   }
@@ -143,15 +145,10 @@ public class Server : IServer
         {
           IServerPacket packet = PacketsOut.Take(token);
 
-          List<Task> tasks = new();
-
           foreach (Guid recipientGuid in packet.RecipientClientGuids)
           {
-            Task task = SendPacketToClientAsync(recipientGuid, packet);
-            tasks.Add(task);
+            SendPacketToClientAsync(recipientGuid, packet);
           }
-
-          // Task.WaitAll(tasks.ToArray());
         }
         catch (OperationCanceledException)
         {

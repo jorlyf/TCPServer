@@ -12,7 +12,7 @@ public static class Program
 
     ConsoleInput();
 
-    await server.Stop();
+    await server.StopAsync();
     
     Console.ReadLine();
   }

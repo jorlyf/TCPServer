@@ -2,7 +2,7 @@ namespace TCPServer;
 
 internal class Packet : IPacket
 {
-  public static int MaxRawBufferSize { get; set; } = 1024;
+  public static int MaxRawBufferSize => PacketSettings.MaxRawBufferSize;
 
   public int Length { get; }
 

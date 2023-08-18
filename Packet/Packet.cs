@@ -1,6 +1,6 @@
 namespace TCPServer;
 
-public class Packet : IPacket
+internal class Packet : IPacket
 {
   public static int MaxRawBufferSize { get; set; } = 1024;
 
